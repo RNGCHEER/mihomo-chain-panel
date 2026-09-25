@@ -1,44 +1,26 @@
-# Mihomo Chain Panel · V0.1
+# Mihomo 链式编辑器 V0.1
 
-Windows 本地节点测试与链式代理面板。读取 TXT 分享链接或 Mihomo YAML，通过实际网站请求筛选节点，自由选择上游与落地，生成固定八组配置。
+Windows x64 便携本地面板。双击 `启动面板.cmd`，浏览器访问 http://127.0.0.1:39242/ 。内置 Node、Python、curl 与本地 Mihomo 核心，无需全局安装。
 
-## 下载与启动
+## 两阶段使用
 
-到 [V0.1 Release](https://github.com/RNGCHEER/mihomo-chain-panel/releases/tag/V0.1) 下载 Windows x64 便携 ZIP，完整解压后双击 `启动面板.cmd`。浏览器自动打开本地面板。不要直接打开 HTML，也不要在压缩包内运行。
+1. 读取 YAML/TXT 或粘贴分享链接，选择内核及网站，点击“读取并重新测试所有节点”。YAML 只使用内联 proxies，忽略旧测试标签、策略组和规则。
+2. 从本轮全部所选网站通过的节点中选择上游和落地，添加任意明确配对，再测试链路并导出。可不添加链路直接导出。修改输入、网站或内核后必须重新测试。
 
-Release 包内置 Node.js、Python、curl、Mihomo 内核和本地数据库；无需安装这些运行时或 Clash Party。软件可以离线启动，互联网节点与网站测试需要网络。源码仓库不提交大型二进制和用户配置；直接下载源码不能替代完整便携包。
+克隆整个落地节点，仅改变 name 并设置 dialer-proxy 为上游名称；不改变 TLS、Reality、认证或传输字段。VLESS、VMess、Trojan、SS、hysteria2、tuic、anytls YAML 节点可用于任一端。拒绝重复名称、自连、重复配对和输入中已有 dialer-proxy 的歧义链。分享链接转换保留有效节点，重复项合并，不支持项跳过并显示已脱敏行号与原因；只有零有效节点才拒绝整批。
 
-## 工作流程
+每个节点和链路使用独立 HTTP listener。跟随重定向，要求无传输错误且所有所选网站最终 HTTP 状态为 200–399；403 不通过。只有实际复测通过链路进入链式跳板。不使用已废弃 relay 策略组。
 
-1. 选择本地 Mihomo 内核版本；新增版本可放进 `内核/mihomo*.exe` 后刷新。
-2. 导入 TXT/粘贴链接，或读取 YAML 中的节点。导入不等于已验证可用。
-3. 填写测试网站，执行本轮节点测试。
-4. 从通过测试的节点中选择上游、落地并添加链路。
-5. 实测组合，导出通过链路与分组配置。最终 YAML 放在程序根目录，同名不会覆盖旧文件。
+输出固定八组：手动选择、自动选择、ai 自动选择、ai 服务、国内网络、非中国、漏网之鱼、链式跳板。国内网络仅 DIRECT；ai 服务仅 DIRECT/手动选择/ai 自动选择；非中国和漏网之鱼仅手动选择/ai 自动选择/自动选择。空组用 REJECT。V0.1 只请求所选测试网站，不额外访问出口地理服务，因此 AI 候选组保持 REJECT，不声称出口稳定或 AI 解锁。
 
-链路方向：`电脑 → 上游节点 → 落地节点 → 网站`。在落地节点副本上设置 `dialer-proxy: 上游名称`，保留协议、传输和认证参数。参考 [Mihomo dialer-proxy 文档](https://wiki.metacubex.one/config/proxies/dialer-proxy/#relay-select)。
+完整 YAML 和 proxies 片段在项目根目录，导出前使用所选核心执行 `-t`。取消生成时仅产生任务内部测试配置和报告。任务保存在任务目录，可能含凭据，切勿发布；发布 ZIP 不含任何 YAML、任务或测试日志。服务重启后必须重新测试。
 
-支持作为候选的协议包括 VLESS、VMess、Trojan、Shadowsocks、Hysteria2、TUIC、AnyTLS；以所选内核支持和实测结果为准。两端单独可用不代表组合可用。UDP 落地需要上游支持对应 UDP 转发；Reality 等组合也应实测。网站访问成功不等于 AI 解锁、UDP 应用或落地公网出口均已验证。
+## 验收与限制
 
-## 八个策略组
+运行 `runtime\node\node.exe 脚本\verify_v2.cjs`（先启动面板）。这是明确标注的本地 SOCKS 双跳夹具，不是真实远程节点测试。验证双端实际经过、第二网站403排除链路、八组及成员、根目录导出、Mihomo -t、关闭生成、自连/重复/已有dialer拒绝、七类协议克隆字段保留。
 
-| 分组 | 成员规则 |
-|---|---|
-| 手动选择 | 可用节点、自动组及已验证链式入口 |
-| 自动选择 | 本轮通过的节点 |
-| ai 自动选择 | 本轮符合非中国出口条件的候选节点；不代表解锁验证 |
-| ai 服务 | DIRECT、手动选择、ai 自动选择 |
-| 国内网络 | DIRECT |
-| 非中国 | 手动选择、ai 自动选择、自动选择 |
-| 漏网之鱼 | 手动选择、ai 自动选择、自动选择 |
-| 链式跳板 | 组合实测通过的链路；空组使用 REJECT |
+七类协议的远端互通、UDP/QUIC 和 Reality 组合不保证通用；必须以当前核心对实际配对的测试为准。字段克隆测试不代表已验证七类远程服务器。浏览器自动化在本次验收超时；API、真实内核、本地双跳与便携启动已验收。固定测试端口18100起、18350起、19096和19097需空闲。最大300节点、300配对。未实现自动地理识别、订阅provider下载或多级链导入。
 
-## 文件与隐私
+官方说明：https://wiki.metacubex.one/config/proxies/dialer-proxy/#relay-select
 
-`panel.html` 为界面，`脚本/` 为后端与测试程序，`runtime/` 为便携运行时，`内核/` 为 Mihomo，`数据/` 为数据库。运行产生的 `任务/`、YAML 和日志可能包含节点凭据，仅保留在本机，不应提交或分享。
-
-仓库和发布包不附带订阅、节点 YAML 或个人测试结果。导入操作不下载远程 proxy-provider；请使用包含实际节点的配置。程序仅在本机回环地址提供面板。
-
-## 第三方组件
-
-Mihomo、Node.js、CPython、curl、yaml npm 包及地理数据库分别遵守各自许可证；本项目不改变其许可。Mihomo 源码见 https://github.com/MetaCubeX/mihomo ，Node.js 见 https://nodejs.org ，Python 见 https://www.python.org ，curl 见 https://curl.se 。第三方二进制不属于本项目原创代码。
+发布白名单见 RELEASE-WHITELIST.json；测试摘要见 VERIFICATION.json。保留第三方组件自带许可证。
