@@ -1,0 +1,16 @@
+*.yaml
+*.yml
+*.log
+*.zip
+*.exe
+*.dll
+*.pyc
+__pycache__/
+任务/
+输出/
+runtime/
+内核/
+数据/
+node_modules/
+启动日志.txt
+.env
