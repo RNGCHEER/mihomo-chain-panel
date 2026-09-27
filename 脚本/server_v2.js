@@ -2,7 +2,7 @@
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),{spawn}=require('child_process'),YAML=require('yaml');
 const {build,validateNodes,makePairs,passed}=require('./build_groups'),cores=require('./cores');
 const ROOT=path.resolve(__dirname,'..'),PORT=39242,runs=new Map();let busy=false;
-function findTool(bundled,cmd){const exe=path.join(bundled,cmd+'.exe');if(require('fs').existsSync(exe))return exe;try{return require('child_process').execSync('where '+cmd,{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim().split('\n')[0]}catch{return null}}
+function findTool(bundled,cmd){const exe=path.join(bundled,cmd+'.exe');if(require('fs').existsSync(exe))return exe;try{const lines=require('child_process').execSync('where '+cmd,{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim().split('\n').filter(Boolean);const good=lines.find(l=>!/venv|conda|WindowsApps/i.test(l));return good||lines[0]}catch{return null}}
 const PYTHON=findTool(path.join(ROOT,'runtime/python'),'python')||'python';
 const CURL=findTool(path.join(ROOT,'runtime/curl'),'curl')||'curl';
 const IMPORT_MAX=4*1024*1024,IMPORT_TIMEOUT=10000,IMPORT_REDIRECTS=3;
