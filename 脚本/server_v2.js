@@ -2,6 +2,9 @@
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),{spawn}=require('child_process'),YAML=require('yaml');
 const {build,validateNodes,makePairs,passed}=require('./build_groups'),cores=require('./cores');
 const ROOT=path.resolve(__dirname,'..'),PORT=39242,runs=new Map();let busy=false;
+function findTool(bundled,cmd){const exe=path.join(bundled,cmd+'.exe');if(require('fs').existsSync(exe))return exe;try{return require('child_process').execSync('where '+cmd,{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim().split('\n')[0]}catch{return null}}
+const PYTHON=findTool(path.join(ROOT,'runtime/python'),'python')||'python';
+const CURL=findTool(path.join(ROOT,'runtime/curl'),'curl')||'curl';
 const IMPORT_MAX=4*1024*1024,IMPORT_TIMEOUT=10000,IMPORT_REDIRECTS=3;
 fs.mkdirSync(path.join(ROOT,'任务'),{recursive:true});
 function importFailure(message){const e=Error(message);e.safeImport=true;return e}
@@ -45,7 +48,7 @@ function run(cmd,args,cwd,log,env={}){return new Promise((ok,no)=>{
 async function convert(text,dir,log){
  let nodes;if(/^\s*(?:vless|vmess|trojan|ss|hysteria2|hy2|tuic|anytls):\/\//m.test(text)){
   fs.writeFileSync(path.join(dir,'输入.txt'),text);
-  await run(path.join(ROOT,'runtime/python/python.exe'),[path.join(__dirname,'sub2mihomo.py'),path.join(dir,'输入.txt'),'--no-groups','-o',path.join(dir,'输入.yaml'),'--proxies-only',path.join(dir,'proxies.yaml')],dir,log);
+  await run(PYTHON,[path.join(__dirname,'sub2mihomo.py'),path.join(dir,'输入.txt'),'--no-groups','-o',path.join(dir,'输入.yaml'),'--proxies-only',path.join(dir,'proxies.yaml')],dir,log);
   nodes=YAML.parse(fs.readFileSync(path.join(dir,'输入.yaml'),'utf8')).proxies;
  }else{let doc;try{doc=YAML.parse(text)}catch(e){throw Error('YAML解析失败: '+e.message)};if(doc&&Array.isArray(doc.proxies)){nodes=doc.proxies}else if(Array.isArray(doc)){nodes=doc}else{throw Error('YAML中未找到proxies数组(当前键: '+(doc?Object.keys(doc).join(','):'空文档')+')')}}
  if(Array.isArray(nodes)&&nodes.some(n=>n&&Object.hasOwn(n,'dialer-proxy')))throw Error('输入 YAML 已含 dialer-proxy；请使用未链式节点，避免歧义链');
@@ -73,14 +76,14 @@ http.createServer(async(req,res)=>{
   });if(!sites.length)throw Error('至少一个网站');
   const id=crypto.randomUUID(),dir=path.join(ROOT,'任务',id);fs.mkdirSync(dir,{recursive:true});
   const nodes=await convert(String(b.nodes||''),dir,log);fs.writeFileSync(path.join(dir,'nodes.json'),JSON.stringify(nodes));fs.writeFileSync(path.join(dir,'sites.json'),JSON.stringify({sites}));
-  await run(process.execPath,[path.join(__dirname,'21_matrix.js')],dir,log,{TEST_OUTPUT:dir,MIHOMO_CORE:core.file,CURL_BIN:path.join(ROOT,'runtime/curl/curl.exe')});
+  await run(process.execPath,[path.join(__dirname,'21_matrix.js')],dir,log,{TEST_OUTPUT:dir,MIHOMO_CORE:core.file,CURL_BIN:CURL});
   const results=JSON.parse(fs.readFileSync(path.join(dir,'matrix.json'),'utf8'));state={id,dir,nodes,results,sites,core};runs.set(id,state);
  }else{
   state=runs.get(b.runId);if(!state)throw Error('本轮结果不存在或服务已重启，请重新测试节点');
   const planned=makePairs(state.nodes,state.results,state.sites,b.pairs||[]),dir=path.join(state.dir,'pairs-'+crypto.randomUUID());fs.mkdirSync(dir,{recursive:true});
   for(const f of ['nodes.json','sites.json','matrix.json'])fs.copyFileSync(path.join(state.dir,f),path.join(dir,f));
   fs.writeFileSync(path.join(dir,'pairs.json'),JSON.stringify(planned));
-  await run(process.execPath,[path.join(__dirname,'chain_matrix.js')],dir,log,{TEST_OUTPUT:dir,MIHOMO_CORE:state.core.file,CURL_BIN:path.join(ROOT,'runtime/curl/curl.exe')});
+  await run(process.execPath,[path.join(__dirname,'chain_matrix.js')],dir,log,{TEST_OUTPUT:dir,MIHOMO_CORE:state.core.file,CURL_BIN:CURL});
   chains=Object.values(JSON.parse(fs.readFileSync(path.join(dir,'chain.json'),'utf8')));state={...state,dir};
  }
  const {nodes,results,sites,dir,core,id}=state,{cfg,report}=build(nodes,results,sites,chains);let output=null;
