@@ -97,6 +97,6 @@ http.createServer(async(req,res)=>{
   fs.copyFileSync(temp,output);fs.writeFileSync(output.replace(/\.yaml$/,'.proxies.yaml'),YAML.stringify({proxies:cfg.proxies}));
  }
  fs.writeFileSync(path.join(dir,'报告.json'),JSON.stringify(report,null,2));
- res.write(JSON.stringify({done:true,runId:id,dir,output,report,available:nodes.filter(n=>passed(results[n.name],sites)).map(n=>({name:n.name,type:n.type})),results:nodes.map(n=>{const r=results[n.name];const latency={};for(const [k] of sites){latency[k]=r?.sites?.[k]?.ms??null}return {name:n.name,type:n.type,passed:passed(r,sites),latency,exitIp:r?.exitIps?.[0]||null}})})+'\n');
+ res.write(JSON.stringify({done:true,runId:id,dir,output,report,available:nodes.filter(n=>passed(results[n.name],sites)).map(n=>({name:n.name,type:n.type,config:n})),results:nodes.map(n=>{const r=results[n.name];const latency={};for(const [k] of sites){latency[k]=r?.sites?.[k]?.ms??null}return {name:n.name,type:n.type,passed:passed(r,sites),latency,exitIp:r?.exitIps?.[0]||null}})})+'\n');
  }catch(e){res.write(JSON.stringify({error:e.message})+'\n')}finally{busy=false;res.end();}
 }).listen(PORT,'127.0.0.1',()=>console.log('http://127.0.0.1:'+PORT));
