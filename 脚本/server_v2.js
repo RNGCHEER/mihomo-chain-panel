@@ -71,7 +71,7 @@ http.createServer(async(req,res)=>{
  let raw='';for await(const c of req){raw+=c;if(raw.length>4000000)throw Error('输入超过4MB');}const b=JSON.parse(raw);let state,chains=[];
  if(req.url==='/api/run'){
   const core=await cores.select(b.core);
-  const sites=[...new Set((b.sites||['https://github.com/','https://google.com/']).map(x=>x.trim()).filter(Boolean))].map(x=>{
+  const sites=[...new Set((b.sites||['https://github.com/','https://google.com/']).map(x=>x.trim()).filter(Boolean))].slice(0,20).map(x=>{
    const u=new URL(x.includes('://')?x:'https://'+x);if(!['http:','https:'].includes(u.protocol)||u.username||u.password)throw Error('网站URL无效');return [u.href,u.href]
   });if(!sites.length)throw Error('至少一个网站');
   const id=crypto.randomUUID(),dir=path.join(ROOT,'任务',id);fs.mkdirSync(dir,{recursive:true});
@@ -80,7 +80,7 @@ http.createServer(async(req,res)=>{
   const results=JSON.parse(fs.readFileSync(path.join(dir,'matrix.json'),'utf8'));state={id,dir,nodes,results,sites,core};runs.set(id,state);
  }else{
   state=runs.get(b.runId);if(!state)throw Error('本轮结果不存在或服务已重启，请重新测试节点');
-  const planned=makePairs(state.nodes,state.results,state.sites,b.pairs||[]),dir=path.join(state.dir,'pairs-'+crypto.randomUUID());fs.mkdirSync(dir,{recursive:true});
+  const planned=makePairs(state.nodes,state.results,state.sites,Array.isArray(b.pairs)?b.pairs.slice(0,300):[]),dir=path.join(state.dir,'pairs-'+crypto.randomUUID());fs.mkdirSync(dir,{recursive:true});
   for(const f of ['nodes.json','sites.json','matrix.json'])fs.copyFileSync(path.join(state.dir,f),path.join(dir,f));
   fs.writeFileSync(path.join(dir,'pairs.json'),JSON.stringify(planned));
   await run(process.execPath,[path.join(__dirname,'chain_matrix.js')],dir,log,{TEST_OUTPUT:dir,MIHOMO_CORE:state.core.file,CURL_BIN:CURL});
