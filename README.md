@@ -20,9 +20,13 @@
 
 > **一句话**：先让每个节点在你指定的网站上真跑一遍，再让通过的双端做二次实测的链式跳板，最后导出经 `mihomo -t` 校验的八组策略 YAML。所有「通过」都有实测计数支撑，不是配置看起来对。
 
-<!-- 想加截图：把截图放到 docs/screenshot.png，然后删掉下一行的注释
-![面板截图](docs/screenshot.png)
+<!-- 想换截图：覆盖 docs/screenshot.png（推荐 1280–1600px 宽，深色主题）即可，无需改 README
 -->
+<p align="center">
+  <img src="docs/screenshot.png" alt="面板界面截图" width="880">
+  <br>
+  <sub>面板界面（空状态）：选内核 → 填输入与测试网站 → 阶段一点测，阶段二配对与导出</sub>
+</p>
 
 ## 为什么用它
 
@@ -199,6 +203,7 @@ mihomo-chain-panel/
 ├─ 内核/                 # Mihomo 内核（发布包内，仓库已忽略）
 ├─ 数据/                 # country.mmdb / geoip.metadb
 ├─ 任务/                 # 任务数据（含凭据，禁止发布）
+├─ docs/screenshot.png   # README 用的面板截图
 └─ 本地运行说明.txt
 ```
 
